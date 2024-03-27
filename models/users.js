@@ -7,8 +7,9 @@ const userSchema = mongoose.Schema({
   name: { type: String, required: true },
   surname: { type: String, required: true },
   role: { type: String, required: true },
+  cart: { type: Array, required: false },
 });
 
 userSchema.plugin(UniqueValidator);
 
-module.exports = mongoose.model("user", userSchema);
+module.exports = mongoose.model("User", userSchema);

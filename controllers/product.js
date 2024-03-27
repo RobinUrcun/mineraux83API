@@ -1,6 +1,5 @@
-const Product = require("../models/product");
 const Stone = require("../models/product");
-
+const User = require("../models/users");
 // RECUPERATION DE TOUTES LES PIERRES//
 
 exports.getAllProduct = (req, res, next) => {
@@ -20,11 +19,20 @@ exports.getAProduct = (req, res, next) => {
 // CREATION D'UNE PIERRE//
 
 exports.createAProduct = (req, res, next) => {
-  const NewItem = new Stone({
-    ...req.body,
-  });
-  NewItem.save()
-    .then(() => res.status(201).json({ message: "objet créé" }))
+  User.findOne({ _id: req.auth.userId })
+    .then((user) => {
+      if (user.role == "ADMIN") {
+        const NewItem = new Stone({
+          ...req.body,
+          userId: req.auth.userId,
+        });
+        NewItem.save()
+          .then(() => res.status(201).json({ message: "objet créé" }))
+          .catch((error) => res.status(400).json({ error }));
+      } else {
+        res.status(403).json({ message: "vous n'etes pas autorisé" });
+      }
+    })
     .catch((error) => res.status(400).json({ error }));
 };
 

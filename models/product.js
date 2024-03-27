@@ -6,9 +6,10 @@ const stoneSchema = mongoose.Schema(
     description: { type: String, required: true },
     userId: { type: String, required: true },
     price: { type: Number, required: true },
-    size: { type: String, required: false },
-    reference: { type: String, required: true },
-    origin: { type: String, required: false },
+    size: { type: String, required: true },
+
+    origin: { type: String, required: true },
+    image: { type: Array, required: false },
   },
   { versionKey: false }
 );
