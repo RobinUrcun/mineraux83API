@@ -86,6 +86,7 @@ exports.getUserCart = (req, res, next) => {
 
 // AJOUTER AU PANIER //
 exports.modifyCart = (req, res, next) => {
+  console.log(req.body.articleId);
   User.findOneAndUpdate(
     { _id: req.auth.userId },
     { $addToSet: { cart: req.body.articleId } }
