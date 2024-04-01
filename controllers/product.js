@@ -11,7 +11,7 @@ exports.getAllProduct = (req, res, next) => {
 // RECUPERATION D'UNE SEULE PIERRE//
 
 exports.getAProduct = (req, res, next) => {
-  Stone.findOne({ _id: req.params.id })
+  Stone.find({ _id: { $in: req.params.id.split(",") } })
     .then((stone) => res.status(200).json(stone))
     .catch((error) => res.status(400).json({ error }));
 };
@@ -48,24 +48,4 @@ exports.deleteAProduct = (req, res, next) => {
   Stone.deleteOne({ _id: req.params.id })
     .then(() => res.status(200).json({ message: "objet supprimé" }))
     .catch((error) => res.status(400).json({ error }));
-};
-
-// RECUPERATION DU PANIER //
-// exports.getCart = (req, res, next) => {
-//   Stone.find({ _id: { $in: req.body.articleId } })
-// .then((data) => {
-//   res.status(200).json(data);
-// })
-// .catch((err) => res.status(400).json({ err }));
-// };
-exports.getCart = (req, res, next) => {
-  User.findOne({ _id: req.auth.userId })
-    .then((user) => {
-      Stone.find({ _id: { $in: user.cart } })
-        .then((data) => {
-          res.status(200).json(data);
-        })
-        .catch((err) => res.status(400).json({ err }));
-    })
-    .catch((err) => res.status(403).json({ err }));
 };

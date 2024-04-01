@@ -1,4 +1,5 @@
 const User = require("../models/users");
+const Stone = require("../models/product");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
@@ -41,17 +42,40 @@ exports.logIn = (req, res, next) => {
                 .status(403)
                 .json({ message: "email ou mot de passe invalide" });
             } else {
-              res.status(200).json({
-                userId: user._id,
-                userRole: user.role,
-                token: jwt.sign(
-                  {
-                    userId: user._id,
-                  },
-                  "phrase_de_cryptage",
-                  { expiresIn: "24h" }
-                ),
-              });
+              if (req.body.cart === null || []) {
+                res.status(200).json({
+                  userId: user._id,
+                  userRole: user.role,
+                  token: jwt.sign(
+                    {
+                      userId: user._id,
+                    },
+                    "phrase_de_cryptage",
+                    { expiresIn: "24h" }
+                  ),
+                });
+              } else {
+                User.findOneAndUpdate(
+                  { email: req.body.email },
+                  { $addToSet: { cart: { $each: JSON.parse(req.body.cart) } } }
+                )
+                  .then(
+                    res.status(200).json({
+                      userId: user._id,
+                      userRole: user.role,
+                      token: jwt.sign(
+                        {
+                          userId: user._id,
+                        },
+                        "phrase_de_cryptage",
+                        { expiresIn: "24h" }
+                      ),
+                    })
+                  )
+                  .catch((err) =>
+                    res.status(404).json({ message: " impossible de addtoset" })
+                  );
+              }
             }
           })
           .catch((error) => res.status(400).json({ error }));
@@ -74,14 +98,18 @@ exports.role = (req, res, next) => {
     .catch((error) => res.status(404).json({ error }));
 };
 
-// RECUPERATION DU PANIER DU CLIENT //
+// RECUPERATION DU PANIER //
 
-exports.getUserCart = (req, res, next) => {
+exports.getCart = (req, res, next) => {
   User.findOne({ _id: req.auth.userId })
     .then((user) => {
-      res.status(200).json({ cart: user.cart });
+      Stone.find({ _id: { $in: user.cart } })
+        .then((data) => {
+          res.status(200).json(data);
+        })
+        .catch((err) => res.status(400).json({ err }));
     })
-    .catch((err) => res.status(400).json({ err }));
+    .catch((err) => res.status(403).json({ err }));
 };
 
 // AJOUTER AU PANIER //
@@ -90,6 +118,17 @@ exports.modifyCart = (req, res, next) => {
   User.findOneAndUpdate(
     { _id: req.auth.userId },
     { $addToSet: { cart: req.body.articleId } }
+  )
+    .then(res.status(200).json({ message: "panier mis a jour" }))
+    .catch((err) => res.status(404).json({ err }));
+};
+
+// SUPPRIMER UN OBJET DU PANIER //
+
+exports.deleteCart = (req, res, next) => {
+  User.findOneAndUpdate(
+    { _id: req.auth.userId },
+    { $pull: { cart: req.body.articleId } }
   )
     .then(res.status(200).json({ message: "panier mis a jour" }))
     .catch((err) => res.status(404).json({ err }));
