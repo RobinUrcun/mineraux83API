@@ -42,7 +42,8 @@ exports.logIn = (req, res, next) => {
                 .status(403)
                 .json({ message: "email ou mot de passe invalide" });
             } else {
-              if (req.body.cart === null || []) {
+              if (req.body.cart === null) {
+                console.log("panier vide");
                 res.status(200).json({
                   userId: user._id,
                   userRole: user.role,
@@ -55,6 +56,7 @@ exports.logIn = (req, res, next) => {
                   ),
                 });
               } else {
+                console.log("item dans panier");
                 User.findOneAndUpdate(
                   { email: req.body.email },
                   { $addToSet: { cart: { $each: JSON.parse(req.body.cart) } } }
