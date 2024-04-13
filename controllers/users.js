@@ -88,11 +88,26 @@ exports.logIn = (req, res, next) => {
 
 // RECUPERATION DES INFO DE L'UTILISATEUR //
 
+exports.userInfo = (req, res, next) => {
+  User.findOne({ _id: req.auth.userId })
+    .then((userInfo) => {
+      const data = {
+        email: userInfo.email,
+        name: userInfo.name,
+        surname: userInfo.surname,
+      };
+      res.status(200).json(data);
+    })
+    .catch((err) => res.status(404).json({ err }));
+};
+
+// RECUPERATION DU ROLE DE L'UTILISATEUR //
+
 exports.role = (req, res, next) => {
   User.findOne({ _id: req.auth.userId })
     .then((user) => {
       if (user.role == "ADMIN") {
-        res.status(200).json({ user });
+        res.status(200).json({ role: user.role });
       } else {
         res.status(403).json({ message: "Vous n'etes pas administrateur" });
       }
