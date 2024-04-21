@@ -42,23 +42,11 @@ exports.logIn = (req, res, next) => {
                 .status(403)
                 .json({ message: "email ou mot de passe invalide" });
             } else {
-              if (req.body.cart === null) {
-                console.log("panier vide");
-                res.status(200).json({
-                  userId: user._id,
-                  userRole: user.role,
-                  token: jwt.sign(
-                    {
-                      userId: user._id,
-                    },
-                    "phrase_de_cryptage",
-                    { expiresIn: "24h" }
-                  ),
-                });
-              } else {
-                console.log("item dans panier");
+              if (req.body.cart) {
+                console.log(req.body.cart);
+
                 User.findOneAndUpdate(
-                  { email: req.body.email },
+                  { email: user.email },
                   { $addToSet: { cart: { $each: JSON.parse(req.body.cart) } } }
                 )
                   .then(
@@ -74,9 +62,19 @@ exports.logIn = (req, res, next) => {
                       ),
                     })
                   )
-                  .catch((err) =>
-                    res.status(404).json({ message: " impossible de addtoset" })
-                  );
+                  .catch((err) => res.status(404).json({ err }));
+              } else {
+                res.status(200).json({
+                  userId: user._id,
+                  userRole: user.role,
+                  token: jwt.sign(
+                    {
+                      userId: user._id,
+                    },
+                    "phrase_de_cryptage",
+                    { expiresIn: "24h" }
+                  ),
+                });
               }
             }
           })
@@ -113,6 +111,42 @@ exports.role = (req, res, next) => {
       }
     })
     .catch((error) => res.status(404).json({ error }));
+};
+
+// MODIFICATION DES INFORMATIONS D'UN UTILISATEUR //
+
+exports.modifyUser = (req, res, next) => {
+  User.findOne({ _id: req.auth.userId })
+    .then((user) => {
+      if (!user) {
+        res.status(401).json({ message: "non autorisé" });
+      } else {
+        bcrypt
+          .compare(req.body.actualPassword, user.password)
+          .then(() => {
+            bcrypt
+              .hash(req.body.newPassword, 10)
+              .then((hash) => {
+                const newUserInfo = {
+                  email: user.email,
+                  password: hash,
+                  name: req.body.name,
+                  surname: req.body.surname,
+                  role: user.role,
+                  cart: user.cart,
+                };
+                User.updateOne({ _id: req.auth.userId, newUserInfo })
+                  .then(() => {
+                    res.status(201).json({ message: "Informations modifiées" });
+                  })
+                  .catch((err) => res.status(400).json({ err }));
+              })
+              .catch((err) => res.status(404).json({ err }));
+          })
+          .catch((err) => res.status(401).json({ err }));
+      }
+    })
+    .catch((err) => res.status(404).json({ err }));
 };
 
 // RECUPERATION DU PANIER //

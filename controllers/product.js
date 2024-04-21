@@ -8,14 +8,12 @@ exports.getAllProduct = (req, res, next) => {
     .catch((error) => res.status(400).json({ error }));
 };
 
-// RECUPERATION D'UNE PIERRE //
+// RECUPERATION DE PIERRE //
 
 exports.getAProduct = (req, res, next) => {
-  Stone.find({ _id: req.params.id })
-    .then((stone) => {
-      res.status(200).json(stone);
-    })
-    .catch((err) => res.status(400).json({ err }));
+  Stone.find({ _id: { $in: req.params.id.split(",") } })
+    .then((stone) => res.status(200).json(stone))
+    .catch((error) => res.status(400).json({ error }));
 };
 // CREATION D'UNE PIERRE//
 
@@ -48,14 +46,6 @@ exports.modifyAProduct = (req, res, next) => {
 exports.deleteAProduct = (req, res, next) => {
   Stone.deleteOne({ _id: req.params.id })
     .then(() => res.status(200).json({ message: "objet supprimé" }))
-    .catch((error) => res.status(400).json({ error }));
-};
-
-// RECUPERATION DES PRODUITS DU PANIER//
-
-exports.getCartProduct = (req, res, next) => {
-  Stone.find({ _id: { $in: req.params.id.split(",") } })
-    .then((stone) => res.status(200).json(stone))
     .catch((error) => res.status(400).json({ error }));
 };
 
