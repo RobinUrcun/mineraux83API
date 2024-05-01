@@ -7,12 +7,9 @@ const productController = require("../controllers/product");
 
 router.get("/", productController.getAllProduct);
 router.get("/:id", productController.getAProduct);
-router.get("/");
 router.post("/", auth, multer, productController.createAProduct);
-router.put("/:id", auth, productController.modifyAProduct);
-
-//REMETTRE MIDDLEWAR D'AUTHENTIFICATION //
-
-router.delete("/:id", multer, productController.deleteAProduct);
+router.put("/:id", auth, multer, productController.modifyAProduct);
+router.delete("/singlePicture", auth, productController.deleteAPicture);
+router.delete("/singleProduct", auth, productController.deleteAProduct);
 
 module.exports = router;

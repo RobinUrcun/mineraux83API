@@ -1,6 +1,8 @@
 const Stone = require("../models/product");
 const User = require("../models/users");
 const { awsConfig } = require("../aws-s3-config/aws-config");
+const { awsConfigV3 } = require("../aws-s3-config/aws-configV3");
+const { awsDeleteConfig } = require("../aws-s3-config/aws-delete-config");
 
 // RECUPERATION DE TOUTES LES PIERRES//
 
@@ -25,15 +27,10 @@ exports.createAProduct = (req, res, next) => {
       if (user.role === "ADMIN") {
         const stringifyReq = JSON.stringify(req.body);
         const parseReq = JSON.parse(stringifyReq);
-        // console.log("req.file", req.files);
-        const results = await awsConfig(req.files);
-        const file1 = results;
-        // console.log("file1", file1);
-        const arrayFiles = [];
-        for (let i = 1; i < results.length; i++) {
-          arrayFiles.push(results[i].Location);
-        }
-        // console.log(results);
+        const results = await awsConfigV3(req.files);
+
+        // console.log("result", results.mainFileName);
+
         const newItem = new Stone({
           title: parseReq.title,
           description: parseReq.description,
@@ -41,8 +38,9 @@ exports.createAProduct = (req, res, next) => {
           size: parseReq.size,
           weight: parseInt(parseReq.weight),
           origin: parseReq.origin,
-          mainFile: results[0].Location,
-          file: arrayFiles,
+          mainFile: results.mainFileName,
+          file: results.filesName,
+          reference: parseReq.reference,
         });
         await newItem
           .save()
@@ -58,23 +56,91 @@ exports.createAProduct = (req, res, next) => {
 // MODIFICATION D'UNE PIERRE//
 
 exports.modifyAProduct = (req, res, next) => {
-  Stone.updateOne({ _id: req.params.id }, { ...req.body, _id: req.params.id })
-    .then(() => res.status(200).json({ message: "Objet modifié !" }))
-    .catch((error) => res.status(400).json({ error }));
+  User.findOne({ _id: req.auth.userId })
+    .then(async (user) => {
+      if (user.role === "ADMIN") {
+        const stringifyReq = JSON.stringify(req.body);
+        const parseReq = JSON.parse(stringifyReq);
+        const results = await awsConfigV3(req.files);
+        console.log("mainDFIlename", results.mainFileName);
+        const newItem = {
+          title: parseReq.title,
+          description: parseReq.description,
+          price: parseInt(parseReq.price),
+          size: parseReq.size,
+          weight: parseInt(parseReq.weight),
+          origin: parseReq.origin,
+          $push: {
+            mainFile: { $each: results.mainFileName },
+            file: { $each: results.filesName },
+          },
+
+          reference: parseReq.reference,
+        };
+        Stone.findOneAndUpdate({ _id: req.params.id }, newItem)
+          .then(() => {
+            res.status(200).json({ message: "modification effectué" });
+          })
+          .catch((err) =>
+            res.status(400).json({ message: "objet non modifié" })
+          );
+      } else {
+        res.status(403).json({ message: "vous n'etes pas autorisé" });
+      }
+    })
+    .catch((err) =>
+      res.status(400).json({ message: "utilisateur non trouvé" })
+    );
+
+  // Stone.updateOne({ _id: req.params.id }, { ...req.body, _id: req.params.id })
+  //   .then(() => res.status(200).json({ message: "Objet modifié !" }))
+  //   .catch((error) => res.status(400).json({ error }));
 };
 // SUPPRESSION D'UNE PIERRE//
 
-// exports.deleteAProduct = (req, res, next) => {
-//   Stone.deleteOne({ _id: req.params.id })
-//     .then(() => res.status(200).json({ message: "objet supprimé" }))
-//     .catch((error) => res.status(400).json({ error }));
-// };
-exports.deleteAProduct = async (req, res, next) => {
-  try {
-    console.log(req.body);
-    const results = await awsConfig(req.files);
-    res.status(200).json({ message: results });
-  } catch (err) {
-    res.status(400).json({ erreur: "middlewarErreur", err });
-  }
+exports.deleteAProduct = (req, res, next) => {
+  const results = awsDeleteConfig(req);
+  // Stone.deleteOne({ _id: req.params.id })
+  //   .then(() => res.status(200).json({ message: "objet supprimé" }))
+  //   .catch((error) => res.status(400).json({ error }));
+};
+
+// SUPPRESSION D'UNE PHOTO //
+
+exports.deleteAPicture = (req, res, next) => {
+  console.log(req.body);
+  User.findOne({ _id: req.auth.userId })
+    .then((user) => {
+      if (user.role === "ADMIN") {
+        // console.log(JSON.parse(req.body));
+        if (req.body.typeOfFile === "mainFile") {
+          console.log("main file");
+          Stone.findOneAndUpdate(
+            { _id: req.body.dataId },
+            { $pull: { mainFile: req.body.pictureKey } }
+          ).then(() => {
+            console.log("supprimé de mongodb");
+            const result = awsDeleteConfig(req.body.pictureKey);
+            console.log("supprimé de aws");
+
+            res.status(200).json({ message: "supprimé" });
+          });
+        } else if (req.body.typeOfFile === "file") {
+          console.log("pas main file ? ");
+          Stone.findOneAndUpdate(
+            { _id: req.body.dataId },
+            { $pull: { file: req.body.pictureKey } }
+          ).then(() => {
+            console.log("supprimé de mongodb");
+            const result = awsDeleteConfig(req.body.pictureKey);
+            console.log("supprimé de aws");
+
+            res.status(200).json({ message: "supprimé" });
+          });
+        }
+      } else {
+        res.status(403).json({ message: "vous n'etes pas autorisé" });
+      }
+    })
+    .catch((err) => res.status(403).json({ err }));
 };

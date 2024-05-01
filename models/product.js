@@ -9,7 +9,7 @@ const stoneSchema = mongoose.Schema(
     weight: { type: Number, required: false },
     origin: { type: String, required: false },
     reference: { type: String, required: false },
-    mainFile: { type: String, required: false },
+    mainFile: { type: Array, required: false },
     file: { type: Array, required: false },
   },
   { versionKey: false }
