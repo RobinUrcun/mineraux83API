@@ -60,7 +60,6 @@ exports.modifyAProduct = (req, res, next) => {
         const stringifyReq = JSON.stringify(req.body);
         const parseReq = JSON.parse(stringifyReq);
         const results = await awsConfigV3(req.files);
-        console.log("mainDFIlename", results.mainFileName);
         const newItem = {
           title: parseReq.title,
           description: parseReq.description,
@@ -99,7 +98,6 @@ exports.deleteAProduct = (req, res, next) => {
       if (user.role === "ADMIN") {
         Stone.findOne({ _id: req.params.id })
           .then((product) => {
-            console.log(product);
             const result = awsDeleteConfig(product.mainFile, product.file);
 
             Stone.deleteOne({ _id: req.params.id })
@@ -123,31 +121,24 @@ exports.deleteAProduct = (req, res, next) => {
 // SUPPRESSION D'UNE PHOTO //
 
 exports.deleteAPicture = (req, res, next) => {
-  console.log(req.body);
   User.findOne({ _id: req.auth.userId })
     .then((user) => {
       if (user.role === "ADMIN") {
         if (req.body.typeOfFile === "mainFile") {
-          console.log("main file");
           Stone.findOneAndUpdate(
             { _id: req.body.dataId },
             { $pull: { mainFile: req.body.pictureKey } }
           ).then(() => {
-            console.log("supprimé de mongodb");
             const result = awsDeleteConfig(null, req.body.pictureKey);
-            console.log("supprimé de aws");
 
             res.status(200).json({ message: "supprimé" });
           });
         } else if (req.body.typeOfFile === "file") {
-          console.log("pas main file ? ");
           Stone.findOneAndUpdate(
             { _id: req.body.dataId },
             { $pull: { file: req.body.pictureKey } }
           ).then(() => {
-            console.log("supprimé de mongodb");
             const result = awsDeleteConfig(null, req.body.pictureKey);
-            console.log("supprimé de aws");
 
             res.status(200).json({ message: "supprimé" });
           });
