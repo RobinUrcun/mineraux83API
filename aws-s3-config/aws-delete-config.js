@@ -1,8 +1,8 @@
 const { DeleteObjectCommand, S3Client } = require("@aws-sdk/client-s3");
 
 exports.awsDeleteConfig = async (mainFile, file) => {
-  console.log(mainFile);
   const client = new S3Client({});
+  console.log("ok aws", mainFile);
   if (mainFile) {
     for (let i = 0; i < mainFile.length; i++) {
       const mainFileParams = {
@@ -14,7 +14,9 @@ exports.awsDeleteConfig = async (mainFile, file) => {
     }
   }
   if (file) {
-    console.log(file.length);
+    console.log("ok file");
+
+    console.log(file);
     for (let i = 0; i < file.length; i++) {
       const fileParams = {
         Bucket: process.env.AWS_BUCKET_NAME,
@@ -22,6 +24,7 @@ exports.awsDeleteConfig = async (mainFile, file) => {
       };
 
       await client.send(new DeleteObjectCommand(fileParams));
+      console.log("ok");
     }
     return "supprimé";
   }

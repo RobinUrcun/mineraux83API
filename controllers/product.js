@@ -112,10 +112,6 @@ exports.deleteAProduct = (req, res, next) => {
       }
     })
     .catch((err) => res.status(400).json({ message: "objet non supprimé" }));
-
-  // Stone.deleteOne({ _id: req.params.id })
-  //   .then(() => res.status(200).json({ message: "objet supprimé" }))
-  //   .catch((error) => res.status(400).json({ error }));
 };
 
 // SUPPRESSION D'UNE PHOTO //
@@ -125,18 +121,18 @@ exports.deleteAPicture = (req, res, next) => {
     .then((user) => {
       if (user.role === "ADMIN") {
         if (req.body.typeOfFile === "mainFile") {
+          console.log(req.body.pictureKey);
           Stone.findOneAndUpdate(
             { _id: req.body.dataId },
-            { $pull: { mainFile: req.body.pictureKey } }
+            { $pull: { mainFile: req.body.pictureKey[0] } }
           ).then(() => {
-            const result = awsDeleteConfig(null, req.body.pictureKey);
-
+            const result = awsDeleteConfig(req.body.pictureKey, null);
             res.status(200).json({ message: "supprimé" });
           });
         } else if (req.body.typeOfFile === "file") {
           Stone.findOneAndUpdate(
             { _id: req.body.dataId },
-            { $pull: { file: req.body.pictureKey } }
+            { $pull: { file: req.body.pictureKey[0] } }
           ).then(() => {
             const result = awsDeleteConfig(null, req.body.pictureKey);
 
