@@ -121,7 +121,6 @@ exports.deleteAPicture = (req, res, next) => {
     .then((user) => {
       if (user.role === "ADMIN") {
         if (req.body.typeOfFile === "mainFile") {
-          console.log(req.body.pictureKey);
           Stone.findOneAndUpdate(
             { _id: req.body.dataId },
             { $pull: { mainFile: req.body.pictureKey[0] } }

@@ -43,8 +43,6 @@ exports.logIn = (req, res, next) => {
                 .json({ message: "email ou mot de passe invalide" });
             } else {
               if (req.body.cart) {
-                console.log(req.body.cart);
-
                 User.findOneAndUpdate(
                   { email: user.email },
                   { $addToSet: { cart: { $each: JSON.parse(req.body.cart) } } }
@@ -165,7 +163,6 @@ exports.getCart = (req, res, next) => {
 
 // AJOUTER AU PANIER //
 exports.modifyCart = (req, res, next) => {
-  console.log(req.body.articleId);
   User.findOneAndUpdate(
     { _id: req.auth.userId },
     { $addToSet: { cart: req.body.articleId } }

@@ -8,7 +8,6 @@ const MIME_TYPES = {
 };
 
 exports.awsConfig = async (files) => {
-  // console.log(files);
   const promises = [];
   const extension = MIME_TYPES[files.mainFile[0].mimetype];
 
@@ -39,6 +38,5 @@ exports.awsConfig = async (files) => {
 
   // Attendre que toutes les promesses soient résolues
   const promise = await Promise.all(promises);
-  // console.log(promise);
   return promise;
 };
