@@ -32,9 +32,9 @@ exports.createAProduct = (req, res, next) => {
         const newItem = new Stone({
           title: parseReq.title,
           description: parseReq.description,
-          price: parseInt(parseReq.price),
+          price: parseReq.price,
           size: parseReq.size,
-          weight: parseInt(parseReq.weight),
+          weight: parseReq.weight,
           origin: parseReq.origin,
           mainFile: results.mainFileName,
           file: results.filesName,
@@ -63,9 +63,9 @@ exports.modifyAProduct = (req, res, next) => {
         const newItem = {
           title: parseReq.title,
           description: parseReq.description,
-          price: parseInt(parseReq.price),
+          price: parseReq.price,
           size: parseReq.size,
-          weight: parseInt(parseReq.weight),
+          weight: parseReq.weight,
           origin: parseReq.origin,
           $push: {
             mainFile: { $each: results.mainFileName },

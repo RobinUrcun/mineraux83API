@@ -115,31 +115,59 @@ exports.role = (req, res, next) => {
 
 exports.modifyUser = (req, res, next) => {
   User.findOne({ _id: req.auth.userId })
+
     .then((user) => {
       if (!user) {
         res.status(401).json({ message: "non autorisé" });
       } else {
+        console.log(" avant compare ");
+
         bcrypt
           .compare(req.body.actualPassword, user.password)
-          .then(() => {
-            bcrypt
-              .hash(req.body.newPassword, 10)
-              .then((hash) => {
+          .then((password) => {
+            console.log(password);
+            if (!password) {
+              return res
+                .status(403)
+                .json({ message: "mot de passe actuel eroné" });
+            } else {
+              if (req.body.newPassword === "") {
                 const newUserInfo = {
-                  email: user.email,
-                  password: hash,
+                  password: user.password,
                   name: req.body.name,
                   surname: req.body.surname,
                   role: user.role,
                   cart: user.cart,
                 };
-                User.updateOne({ _id: req.auth.userId, newUserInfo })
+                User.updateOne({ _id: req.auth.userId }, newUserInfo)
                   .then(() => {
-                    res.status(201).json({ message: "Informations modifiées" });
+                    console.log("update ok");
+                    res.status(200).json({ message: "Informations modifiées" });
                   })
                   .catch((err) => res.status(400).json({ err }));
-              })
-              .catch((err) => res.status(404).json({ err }));
+              } else {
+                bcrypt
+                  .hash(req.body.newPassword, 10)
+                  .then((hash) => {
+                    const newUserInfo = {
+                      password: hash,
+                      name: req.body.name,
+                      surname: req.body.surname,
+                      role: user.role,
+                      cart: user.cart,
+                    };
+                    User.updateOne({ _id: req.auth.userId }, newUserInfo)
+                      .then(() => {
+                        console.log("update ok");
+                        res
+                          .status(200)
+                          .json({ message: "Informations modifiées" });
+                      })
+                      .catch((err) => res.status(400).json({ err }));
+                  })
+                  .catch((err) => res.status(404).json({ err }));
+              }
+            }
           })
           .catch((err) => res.status(401).json({ err }));
       }
