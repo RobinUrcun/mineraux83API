@@ -6,10 +6,30 @@ const { awsDeleteConfig } = require("../aws-s3-config/aws-delete-config");
 
 // RECUPERATION DE TOUTES LES PIERRES//
 
-exports.getAllProduct = (req, res, next) => {
-  Stone.find()
-    .then((stone) => res.status(200).json(stone))
-    .catch((error) => res.status(400).json({ error }));
+exports.getAllProduct = async (req, res, next) => {
+  const page = parseInt(req.query.page) || 1; //
+
+  const limit = 8; // Nombre d'éléments par page
+
+  try {
+    const totalStones = await Stone.countDocuments(); // Comptez le nombre total de documents dans la collection
+    const skip = (page - 1) * limit; // Calculez l'index de départ pour la pagination
+
+    const stones = await Stone.find().skip(skip).limit(limit); // Utilisez skip() et limit() pour paginer les résultats
+
+    res.status(200).json({
+      total: totalStones,
+      page,
+      limit,
+      stones,
+    });
+  } catch (error) {
+    res.status(400).json({ error });
+  }
+
+  // Stone.find()
+  //   .then((stone) => res.status(200).json(stone))
+  //   .catch((error) => res.status(400).json({ error }));
 };
 
 // RECUPERATION DE PIERRE //
