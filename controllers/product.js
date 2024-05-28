@@ -26,10 +26,6 @@ exports.getAllProduct = async (req, res, next) => {
   } catch (error) {
     res.status(400).json({ error });
   }
-
-  // Stone.find()
-  //   .then((stone) => res.status(200).json(stone))
-  //   .catch((error) => res.status(400).json({ error }));
 };
 
 // RECUPERATION DE PIERRE //
