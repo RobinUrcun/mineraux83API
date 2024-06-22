@@ -1,0 +1,16 @@
+{
+  "tarif": [
+    { "maxWeight": 500, "price": 680 },
+    { "maxWeight": 1000, "price": 750 },
+    { "maxWeight": 2000, "price": 990 },
+    { "maxWeight": 3000, "price": 990 },
+    { "maxWeight": 4000, "price": 1540 },
+    { "maxWeight": 5000, "price": 1540 },
+    { "maxWeight": 7000, "price": 1540 },
+    { "maxWeight": 10000, "price": 1540 },
+    { "maxWeight": 15000, "price": 2940 },
+    { "maxWeight": 20000, "price": 2940 },
+    { "maxWeight": 30000, "price": 3940 }
+  ],
+  "delay": 5
+}
