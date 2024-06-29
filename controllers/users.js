@@ -8,6 +8,7 @@ const {
 } = require("../shippingFunction/shippingCalcFunction");
 const product = require("../models/product");
 const { awsDeleteConfig } = require("../aws-s3-config/aws-delete-config");
+const { log } = require("console");
 
 // CREATION D'UTILISATEUR //
 
@@ -111,7 +112,7 @@ exports.role = (req, res, next) => {
       if (user.role == "ADMIN") {
         res.status(200).json({ role: user.role });
       } else {
-        res.status(403).json({ message: "Vous n'etes pas administrateur" });
+        res.status(401).json({ message: "Vous n'etes pas administrateur" });
       }
     })
     .catch((error) => res.status(404).json({ error }));
@@ -311,6 +312,7 @@ const captureOrder = async (orderID) => {
 };
 
 exports.orders = async (req, res, next) => {
+  console.log("ok middlewar");
   User.findOne({ _id: req.auth.userId })
     .then((user) => {
       Stone.find({ _id: { $in: user.cart } })
@@ -321,6 +323,7 @@ exports.orders = async (req, res, next) => {
             deliveryInfo.deliveryCompany,
             deliveryInfo.country
           );
+          console.log(totalcart);
 
           try {
             // use the cart information passed from the front-end to calculate the order amount detals
@@ -350,55 +353,76 @@ exports.ordersCapture = async (req, res, next) => {
     if (httpStatusCode === 201) {
       User.findOne({ _id: req.auth.userId })
         .then(async (user) => {
-          console.log(user);
-          const totalCart =
-            parseInt(
-              jsonResponse.purchase_units[0].payments.captures[0].amount.value
-            ) * 100;
-          console.log(totalCart);
-          const { deliveryInfo, commandeInfo } = req.body;
-          const newOrder = new Orders({
-            userName: user.name,
-            userSurname: user.surname,
-            userEmail: user.email,
-            phone: commandeInfo.phone,
+          Stone.find({ _id: { $in: user.cart } }).then(async (stone) => {
+            console.log(stone);
+            const productsInfo = [];
+            for (let index = 0; index < stone.length; index++) {
+              const productInfo = {
+                title: stone[index].title,
+                price: stone[index].price,
+                reference: stone[index].reference,
+              };
+              productsInfo.push(productInfo);
+            }
+            console.log(
+              jsonResponse.purchase_units[0].payments.captures[0].amount.value *
+                100
+            );
+            console.log(
+              parseFloat(
+                jsonResponse.purchase_units[0].payments.captures[0].amount
+                  .value * 100
+              )
+            );
+            const totalCart = parseFloat(
+              jsonResponse.purchase_units[0].payments.captures[0].amount.value *
+                100
+            );
+            const { deliveryInfo, commandeInfo } = req.body;
+            console.log(deliveryInfo);
+            const date = Date.now().toString();
+            const newOrder = new Orders({
+              userName: user.name,
+              userId: user._id,
+              userSurname: user.surname,
+              userEmail: user.email,
+              phone: commandeInfo.phone,
+              date: date,
+              products: productsInfo,
+              orderID: orderID,
+              total: totalCart,
+              deliveryName: commandeInfo.userName,
+              deliverySurname: commandeInfo.userSurname,
+              deliveryCompany: deliveryInfo.deliveryCompany,
+              deliveryShopName: deliveryInfo.name,
+              deliveryRoad: deliveryInfo.road,
+              deliveryCP: deliveryInfo.CP,
+              deliveryCity: deliveryInfo.city,
+              deliveryCountry: deliveryInfo.country,
+            });
+            const deleteAwsPromise = [];
+            for (let index = 0; index < stone.length; index++) {
+              deleteAwsPromise.push(
+                awsDeleteConfig(stone[index].mainFile, stone[index].file)
+              );
+            }
 
-            orderID: orderID,
-            total: totalCart,
-
-            deliveryName: commandeInfo.userName,
-            deliverySurname: commandeInfo.userSurname,
-            deliveryCompany: deliveryInfo.deliveryCompany,
-            deliveryShopName: deliveryInfo.name,
-            deliveryRoad: deliveryInfo.road,
-            deliveryCP: deliveryInfo.CP,
-            deliveryCity: deliveryInfo.city,
-            deliveryCountry: deliveryInfo.country,
-          });
-          Promise.all([
-            newOrder.save(),
-            Stone.find({ _id: { $in: user.cart } }).then(async (stone) => {
-              const promises = [];
-              for (let index = 0; index < stone.length; index++) {
-                promises.push(
-                  awsDeleteConfig(stone[index].mainFile, stone[index].file)
-                );
-              }
-              await Promise.all(promises);
-
-              console.log("supprimé AWS");
-              console.log(user.cart);
-              await Stone.deleteMany({ _id: { $in: user.cart } });
-              await User.findOneAndUpdate(
+            await Promise.all([
+              newOrder.save().then(() => {
+                console.log("ok save");
+              }),
+              Promise.all(deleteAwsPromise),
+              Stone.deleteMany({ _id: { $in: user.cart } }),
+              User.findOneAndUpdate(
                 { _id: req.auth.userId },
                 { $set: { cart: [] } }
-              );
-            }),
-          ])
-            .then(async () => {
-              res.status(httpStatusCode).json(jsonResponse);
-            })
-            .catch((error) => res.status(400).json({ error: "save" }));
+              ),
+            ])
+              .then(async () => {
+                res.status(httpStatusCode).json(jsonResponse);
+              })
+              .catch((error) => res.status(400).json({ error: "save" }));
+          });
         })
         .catch((err) => res.status(400).json({ err }));
     }
@@ -406,4 +430,95 @@ exports.ordersCapture = async (req, res, next) => {
     console.error("Failed to create order:", error);
     res.status(500).json({ error: "Failed to capture order." });
   }
+};
+
+// RECUPERATION DES FACTURES CLIENTS //
+
+exports.getClientOrders = (req, res, next) => {
+  Orders.find({ userId: req.auth.userId })
+    .then((orders) => {
+      console.log(orders);
+
+      const orderList = [];
+      console.log(orders.length);
+      for (let index = 0; index < orders.length; index++) {
+        const order = {
+          orderID: orders[index].orderID,
+          products: orders[index].products,
+          total: orders[index].total,
+          date: orders[index].date,
+        };
+        orderList.push(order);
+      }
+      res.status(200).json({ orderList });
+    })
+    .catch((err) => res.status(400).json({ err }));
+};
+
+// RECUPERATION DE TOUTES LES FACTURES //
+
+exports.getAllOrders = (req, res, next) => {
+  User.findOne({ _id: req.auth.userId })
+    .then((user) => {
+      if (user.role == "ADMIN") {
+        Orders.find()
+          .then((orders) => {
+            console.log(orders);
+            res.status(200).json({ orderList: orders });
+          })
+          .catch((err) => res.status(400).json({ err }));
+      } else {
+        res.status(401).json({ message: "non-authorisé" });
+      }
+    })
+    .catch((err) => res.status(400).json({ err }));
+};
+
+// RECUPERER UNE COMMANDE //
+
+exports.getOrderId = (req, res, next) => {
+  console.log("params ", req.params.id);
+  Orders.find({ orderID: req.params.id })
+    .then((data) => {
+      console.log("data", data);
+      res.status(200).json({ data });
+    })
+    .catch((err) => res.status(400).json({ err }));
+};
+
+// OUBLIE DU MOT DE PASSE //
+
+exports.forgotPassword = (req, res, next) => {
+  console.log(req.body.email);
+
+  User.findOne({ email: req.body.email })
+    .then(async (response) => {
+      if (!response) {
+        res.status(400).json({ err });
+      } else {
+        const token = jwt.sign({ userId: response._id }, "phrase_de_cryptage", {
+          expiresIn: "1h",
+        });
+        const tokenExpires = Date.now() + 3600000;
+
+        const newUser = {
+          ...response,
+          resetPasswordToken: token,
+          resetPasswordExpires: tokenExpires,
+        };
+
+        await User.updateOne(
+          { _id: response._id },
+          {
+            resetPasswordToken: token,
+            resetPasswordExpires: tokenExpires,
+          }
+        )
+          .then(() => {
+            res.status(200).json({ message: "ok" });
+          })
+          .catch((err) => res.status(400).json({ error: "Update" }));
+      }
+    })
+    .catch((err) => res.status(400).json({ error: "find" }));
 };

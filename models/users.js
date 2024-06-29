@@ -8,6 +8,8 @@ const userSchema = mongoose.Schema({
   surname: { type: String, required: true },
   role: { type: String, required: true },
   cart: { type: Array, required: false },
+  resetPasswordToken: { type: String, required: false },
+  resetPasswordExpires: { type: Number, required: false },
 });
 
 userSchema.plugin(UniqueValidator);

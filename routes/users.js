@@ -14,4 +14,8 @@ router.put("/cart", auth, usersController.modifyCart);
 router.delete("/cart", auth, usersController.deleteCart);
 router.post("/orders", auth, usersController.orders);
 router.post("/orders/:orderID/capture", auth, usersController.ordersCapture);
+router.get("/getClientOrders", auth, usersController.getClientOrders);
+router.get("/getAllOrders", auth, usersController.getAllOrders);
+router.get("/order/:id", auth, usersController.getOrderId);
+router.post("/forgot-password", usersController.forgotPassword);
 module.exports = router;

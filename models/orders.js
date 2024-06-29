@@ -6,8 +6,10 @@ const ordersSchema = mongoose.Schema(
     userName: { type: String, required: true },
     userSurname: { type: String, required: true },
     userEmail: { type: String, required: true },
+    userId: { type: String, require: true },
     phone: { type: String, required: true },
-
+    date: { type: String, required: true },
+    products: { type: Array, required: true },
     orderID: { type: String, required: true },
     total: { type: Number, required: true },
 
