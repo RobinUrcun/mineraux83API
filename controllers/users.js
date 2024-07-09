@@ -3,12 +3,14 @@ const Stone = require("../models/product");
 const Orders = require("../models/orders");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+const nodemailer = require("nodemailer");
 const {
   shippingCalcFunction,
 } = require("../shippingFunction/shippingCalcFunction");
 const product = require("../models/product");
 const { awsDeleteConfig } = require("../aws-s3-config/aws-delete-config");
 const { log } = require("console");
+const { json } = require("body-parser");
 
 // CREATION D'UTILISATEUR //
 
@@ -231,12 +233,6 @@ const { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PORT = 8888 } = process.env;
 const base = "https://api-m.sandbox.paypal.com";
 
 const createOrder = async (cart) => {
-  // use the cart information passed from the front-end to calculate the purchase unit details
-  console.log(
-    "shopping cart information passed from the frontend createOrder() callback:",
-    cart
-  );
-
   const accessToken = await generateAccessToken();
   const url = `${base}/v2/checkout/orders`;
   const payload = {
@@ -287,7 +283,7 @@ const generateAccessToken = async () => {
     const data = await response.json();
     return data.access_token;
   } catch (error) {
-    console.error("Failed to generate Access Token:", error);
+    res.status(400).json({ error });
   }
 };
 
@@ -300,11 +296,6 @@ const captureOrder = async (orderID) => {
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${accessToken}`,
-      // Uncomment one of these to force an error for negative testing (in sandbox mode only). Documentation:
-      // https://developer.paypal.com/tools/sandbox/negative-testing/request-headers/
-      // "PayPal-Mock-Response": '{"mock_application_codes": "INSTRUMENT_DECLINED"}'
-      // "PayPal-Mock-Response": '{"mock_application_codes": "TRANSACTION_REFUSED"}'
-      // "PayPal-Mock-Response": '{"mock_application_codes": "INTERNAL_SERVER_ERROR"}'
     },
   });
 
@@ -312,7 +303,6 @@ const captureOrder = async (orderID) => {
 };
 
 exports.orders = async (req, res, next) => {
-  console.log("ok middlewar");
   User.findOne({ _id: req.auth.userId })
     .then((user) => {
       Stone.find({ _id: { $in: user.cart } })
@@ -323,7 +313,6 @@ exports.orders = async (req, res, next) => {
             deliveryInfo.deliveryCompany,
             deliveryInfo.country
           );
-          console.log(totalcart);
 
           try {
             // use the cart information passed from the front-end to calculate the order amount detals
@@ -333,7 +322,6 @@ exports.orders = async (req, res, next) => {
             );
             res.status(httpStatusCode).json(jsonResponse);
           } catch (error) {
-            console.error("Failed to create order:", error);
             res.status(500).json({ error: "Failed to create order." });
           }
         })
@@ -343,18 +331,14 @@ exports.orders = async (req, res, next) => {
 };
 
 exports.ordersCapture = async (req, res, next) => {
-  console.log("ok capture");
   try {
     const { orderID } = req.params;
     const { jsonResponse, httpStatusCode } = await captureOrder(orderID);
-    console.log(
-      jsonResponse.purchase_units[0].payments.captures[0].amount.value
-    );
+
     if (httpStatusCode === 201) {
       User.findOne({ _id: req.auth.userId })
         .then(async (user) => {
           Stone.find({ _id: { $in: user.cart } }).then(async (stone) => {
-            console.log(stone);
             const productsInfo = [];
             for (let index = 0; index < stone.length; index++) {
               const productInfo = {
@@ -364,22 +348,13 @@ exports.ordersCapture = async (req, res, next) => {
               };
               productsInfo.push(productInfo);
             }
-            console.log(
-              jsonResponse.purchase_units[0].payments.captures[0].amount.value *
-                100
-            );
-            console.log(
+
+            const totalCart = Math.round(
               parseFloat(
-                jsonResponse.purchase_units[0].payments.captures[0].amount
-                  .value * 100
-              )
-            );
-            const totalCart = parseFloat(
-              jsonResponse.purchase_units[0].payments.captures[0].amount.value *
-                100
+                jsonResponse.purchase_units[0].payments.captures[0].amount.value
+              ) * 100
             );
             const { deliveryInfo, commandeInfo } = req.body;
-            console.log(deliveryInfo);
             const date = Date.now().toString();
             const newOrder = new Orders({
               userName: user.name,
@@ -408,9 +383,7 @@ exports.ordersCapture = async (req, res, next) => {
             }
 
             await Promise.all([
-              newOrder.save().then(() => {
-                console.log("ok save");
-              }),
+              newOrder.save().then(() => {}),
               Promise.all(deleteAwsPromise),
               Stone.deleteMany({ _id: { $in: user.cart } }),
               User.findOneAndUpdate(
@@ -427,7 +400,6 @@ exports.ordersCapture = async (req, res, next) => {
         .catch((err) => res.status(400).json({ err }));
     }
   } catch (error) {
-    console.error("Failed to create order:", error);
     res.status(500).json({ error: "Failed to capture order." });
   }
 };
@@ -437,10 +409,7 @@ exports.ordersCapture = async (req, res, next) => {
 exports.getClientOrders = (req, res, next) => {
   Orders.find({ userId: req.auth.userId })
     .then((orders) => {
-      console.log(orders);
-
       const orderList = [];
-      console.log(orders.length);
       for (let index = 0; index < orders.length; index++) {
         const order = {
           orderID: orders[index].orderID,
@@ -463,7 +432,6 @@ exports.getAllOrders = (req, res, next) => {
       if (user.role == "ADMIN") {
         Orders.find()
           .then((orders) => {
-            console.log(orders);
             res.status(200).json({ orderList: orders });
           })
           .catch((err) => res.status(400).json({ err }));
@@ -477,10 +445,8 @@ exports.getAllOrders = (req, res, next) => {
 // RECUPERER UNE COMMANDE //
 
 exports.getOrderId = (req, res, next) => {
-  console.log("params ", req.params.id);
   Orders.find({ orderID: req.params.id })
     .then((data) => {
-      console.log("data", data);
       res.status(200).json({ data });
     })
     .catch((err) => res.status(400).json({ err }));
@@ -489,8 +455,6 @@ exports.getOrderId = (req, res, next) => {
 // OUBLIE DU MOT DE PASSE //
 
 exports.forgotPassword = (req, res, next) => {
-  console.log(req.body.email);
-
   User.findOne({ email: req.body.email })
     .then(async (response) => {
       if (!response) {
@@ -501,10 +465,19 @@ exports.forgotPassword = (req, res, next) => {
         });
         const tokenExpires = Date.now() + 3600000;
 
-        const newUser = {
-          ...response,
-          resetPasswordToken: token,
-          resetPasswordExpires: tokenExpires,
+        // SAUVEGARDE DU TOKEN //
+        const transporter = nodemailer.createTransport({
+          service: "Gmail",
+          auth: {
+            user: "mineraux83API@gmail.com",
+            pass: "upix ymoz wimj molp",
+          },
+        });
+        const mailOptions = {
+          from: "mineraux83API@gmail.com",
+          to: response.email,
+          subject: "Réinitialisation de votre mot de passe",
+          text: `Cliquez sur ce lien pour réinitialiser votre mot de passe : http://localhost:3000/reset-password/${token}`,
         };
 
         await User.updateOne(
@@ -515,10 +488,47 @@ exports.forgotPassword = (req, res, next) => {
           }
         )
           .then(() => {
-            res.status(200).json({ message: "ok" });
+            transporter.sendMail(mailOptions, (err) => {
+              if (err) {
+                return res.status(500).json({ err });
+              }
+              res.status(200).send("Email de réinitialisation envoyé.");
+            });
           })
           .catch((err) => res.status(400).json({ error: "Update" }));
       }
     })
     .catch((err) => res.status(400).json({ error: "find" }));
+};
+
+// REINITIALISATION DU MOT DE PASSE //
+
+exports.resetPassword = (req, res, next) => {
+  bcrypt
+    .hash(req.body.password, 10)
+    .then((hash) => {
+      User.findOneAndUpdate(
+        {
+          _id: req.auth.userId,
+          resetPasswordToken: req.headers.authorization.split(" ")[1],
+          resetPasswordExpires: { $gt: Date.now() },
+        },
+        {
+          password: hash,
+          resetPasswordToken: "undefined",
+          resetPasswordExpires: 0,
+        },
+        { new: true }
+      )
+        .then((user) => {
+          if (!user) {
+            res.status(400).json({ err: "erreur update" });
+          } else {
+            res.status(200).json({ message: "Mot de passe modifié" });
+          }
+        })
+        .catch((err) => res.status(400).json({ err: "erreur update" }));
+    })
+
+    .catch((err) => res.status(400).json({ erreur: "hash du mot de passe" }));
 };

@@ -1,6 +1,6 @@
 const Stone = require("../models/product");
 const User = require("../models/users");
-const { awsConfig } = require("../aws-s3-config/aws-config");
+
 const { awsConfigV3 } = require("../aws-s3-config/aws-configV3");
 const { awsDeleteConfig } = require("../aws-s3-config/aws-delete-config");
 
@@ -8,14 +8,18 @@ const { awsDeleteConfig } = require("../aws-s3-config/aws-delete-config");
 
 exports.getAllProduct = async (req, res, next) => {
   const page = parseInt(req.query.page) || 1; //
-
+  const { name } = req.query;
   const limit = 8; // Nombre d'éléments par page
+  let filter = {};
 
+  if (name) {
+    filter.title = { $regex: name, $options: "i" }; // Recherche insensible à la casse
+  }
   try {
     const totalStones = await Stone.countDocuments(); // Comptez le nombre total de documents dans la collection
     const skip = (page - 1) * limit; // Calculez l'index de départ pour la pagination
 
-    const stones = await Stone.find().skip(skip).limit(limit); // Utilisez skip() et limit() pour paginer les résultats
+    const stones = await Stone.find(filter).skip(skip).limit(limit); // Utilisez skip() et limit() pour paginer les résultats
 
     res.status(200).json({
       total: totalStones,

@@ -9,10 +9,10 @@ const usersRoutes = require("./routes/users");
 const app = express();
 
 mongoose
-  .connect(
-    "mongodb+srv://mineraux83api:gnbnlBc6sSLmHRnM@mineraux83.vmoalbg.mongodb.net/test?retryWrites=true&w=majority",
-    { useNewUrlParser: true, useUnifiedTopology: true }
-  )
+  .connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then(() => console.log("Connexion à MongoDB réussie !"))
   .catch(() => console.log("Connexion à MongoDB échouée !"));
 
