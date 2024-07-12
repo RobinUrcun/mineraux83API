@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "name": "frit-storyAPI",
+  "name": "Lithosphere83API",
   "builds": [{ "src": "server.js", "use": "@vercel/node" }],
   "routes": [
     {
