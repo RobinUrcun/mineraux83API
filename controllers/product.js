@@ -7,19 +7,32 @@ const { awsDeleteConfig } = require("../aws-s3-config/aws-delete-config");
 // RECUPERATION DE TOUTES LES PIERRES//
 
 exports.getAllProduct = async (req, res, next) => {
-  const page = parseInt(req.query.page) || 1; //
-  const { name } = req.query;
-  const limit = 8; // Nombre d'éléments par page
+  const page = parseInt(req.query.page) || 1;
+  const { name, sort } = req.query;
+  const limit = 8;
   let filter = {};
 
   if (name) {
-    filter.title = { $regex: name, $options: "i" }; // Recherche insensible à la casse
+    filter.title = { $regex: name, $options: "i" };
   }
-  try {
-    const totalStones = await Stone.countDocuments(); // Comptez le nombre total de documents dans la collection
-    const skip = (page - 1) * limit; // Calculez l'index de départ pour la pagination
 
-    const stones = await Stone.find(filter).skip(skip).limit(limit); // Utilisez skip() et limit() pour paginer les résultats
+  let sortOption = {};
+  if (sort === "new") {
+    sortOption = { createdAt: -1 }; // Sort by creation date
+  } else if (sort === "ascending") {
+    sortOption = { price: 1 }; // Sort by price ascending
+  } else if (sort === "decreasing") {
+    sortOption = { price: -1 }; // Sort by price descending
+  }
+
+  try {
+    const totalStones = await Stone.countDocuments();
+    const skip = (page - 1) * limit;
+
+    const stones = await Stone.find(filter)
+      .sort(sortOption) // Apply sorting
+      .skip(skip)
+      .limit(limit);
 
     res.status(200).json({
       total: totalStones,
@@ -59,6 +72,7 @@ exports.createAProduct = (req, res, next) => {
           mainFile: results.mainFileName,
           file: results.filesName,
           reference: parseReq.reference,
+          createdAt: Date.now(),
         });
         await newItem
           .save()

@@ -408,6 +408,7 @@ exports.ordersCapture = async (req, res, next) => {
 
 exports.getClientOrders = (req, res, next) => {
   Orders.find({ userId: req.auth.userId })
+    .sort({ date: -1 })
     .then((orders) => {
       const orderList = [];
       for (let index = 0; index < orders.length; index++) {
@@ -431,6 +432,7 @@ exports.getAllOrders = (req, res, next) => {
     .then((user) => {
       if (user.role == "ADMIN") {
         Orders.find()
+          .sort({ date: -1 })
           .then((orders) => {
             res.status(200).json({ orderList: orders });
           })

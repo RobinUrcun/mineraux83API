@@ -1,3 +1,4 @@
+const { create } = require("domain");
 const mongoose = require("mongoose");
 
 const stoneSchema = mongoose.Schema(
@@ -11,6 +12,7 @@ const stoneSchema = mongoose.Schema(
     reference: { type: String, required: false },
     mainFile: { type: Array, required: false },
     file: { type: Array, required: false },
+    createdAt: { type: Number, required: false },
   },
   { versionKey: false }
 );
