@@ -1,5 +1,5 @@
 const cm_france_priceList = require("../priceList/colissimo/france/cm_france_priceList.json");
-const cm_europe_priceList = require("../priceList/colissimo/europe/cm_europe_priceList");
+const cm_europe_priceList = require("../priceList/colissimo/europe/cm_europe_priceList.json");
 
 exports.shippingFunctionCM = (cartList, countryToSend) => {
   const priceLists = {
