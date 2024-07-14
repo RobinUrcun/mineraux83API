@@ -1,4 +1,4 @@
-const mr_france_priceliste = require("../priceList/mondialRelay/france/mr_france_priceliste.json");
+const mr_france_priceliste = require("../priceList/mondialRelay/france/mr_france_priceListe.json");
 const mr_belgique_priceList = require("../priceList/mondialRelay/belgique/mr_belgique_priceList.json");
 const mr_luxembourg_priceList = require("../priceList/mondialRelay/luxembourg/mr_luxembourg_priceList.json");
 const mr_paysBas_priceList = require("../priceList/mondialRelay/pays-bas/mr_pays-bas_priceList.json");
