@@ -14,7 +14,6 @@ exports.shippingCalcFunction = (data, deliveryCompany, deliveryCountry) => {
       }
     } else if (deliveryCompany === "CM") {
       if (deliveryCountry) {
-        console.log("ok cm");
         const shippingPrice = shippingFunctionCM(data, deliveryCountry);
         totalcart = parseInt(totalcart) + parseInt(shippingPrice);
       } else {
