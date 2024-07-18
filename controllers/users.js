@@ -479,7 +479,7 @@ exports.forgotPassword = (req, res, next) => {
           from: "mineraux83API@gmail.com",
           to: response.email,
           subject: "Réinitialisation de votre mot de passe",
-          text: `Cliquez sur ce lien pour réinitialiser votre mot de passe : http://localhost:3000/reset-password/${token}`,
+          text: `Cliquez sur ce lien pour réinitialiser votre mot de passe : www.lithosphere83.fr/reset-password/${token}`,
         };
 
         await User.updateOne(
