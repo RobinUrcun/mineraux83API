@@ -381,8 +381,22 @@ exports.ordersCapture = async (req, res, next) => {
                 awsDeleteConfig(stone[index].mainFile, stone[index].file)
               );
             }
+            const transporter = nodemailer.createTransport({
+              service: "Gmail",
+              auth: {
+                user: process.env.NODEMAILER_USER,
+                pass: process.env.NODEMAILER_PASSWORD,
+              },
+            });
+            const mailOptions = {
+              from: "lithosphere83.nepasrepondre@gmail.com",
+              to: "robinurcun@gmail.com",
+              subject: "Vente d'un article",
+              text: `Cliquez sur ce lien pour consulter votre vente : www.lithosphere83.fr/admin/mes-ventes`,
+            };
 
             await Promise.all([
+              transporter.sendMail(mailOptions),
               newOrder.save().then(() => {}),
               Promise.all(deleteAwsPromise),
               Stone.deleteMany({ _id: { $in: user.cart } }),
