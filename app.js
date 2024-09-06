@@ -5,6 +5,7 @@ const mongoose = require("mongoose");
 
 const productRoutes = require("./routes/product");
 const usersRoutes = require("./routes/users");
+const sendMessageRoutes = require("./routes/sendMessage");
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use((req, res, next) => {
   );
   next();
 });
+app.use("/api/sendMessage", sendMessageRoutes);
 
 app.use("/api/product", productRoutes);
 app.use("/api/user", usersRoutes);
