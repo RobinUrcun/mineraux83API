@@ -4,7 +4,7 @@ const { shippingFunctionMR } = require("./shippingFunctionMR");
 exports.shippingCalcFunction = (data, deliveryCompany, deliveryCountry) => {
   let totalcart = data.reduce((total, produit) => total + produit.price, 0);
 
-  if (totalcart < 8000) {
+  if (totalcart < 6000) {
     if (deliveryCompany === "MR") {
       if (deliveryCountry) {
         const shippingPrice = shippingFunctionMR(data, deliveryCountry);
