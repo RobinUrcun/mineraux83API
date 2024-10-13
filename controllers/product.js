@@ -61,7 +61,7 @@ exports.createAProduct = (req, res, next) => {
         const stringifyReq = JSON.stringify(req.body);
         const parseReq = JSON.parse(stringifyReq);
         const results = await awsConfigV3(req.files);
-
+        console.log(parseReq);
         const newItem = new Stone({
           title: parseReq.title,
           description: parseReq.description,
@@ -71,6 +71,7 @@ exports.createAProduct = (req, res, next) => {
           origin: parseReq.origin,
           mainFile: results.mainFileName,
           file: results.filesName,
+          categories: parseReq.categories,
           reference: parseReq.reference,
           createdAt: Date.now(),
         });
@@ -101,6 +102,7 @@ exports.modifyAProduct = (req, res, next) => {
           size: parseReq.size,
           weight: parseReq.weight,
           origin: parseReq.origin,
+          categories: parseReq.categories,
           $push: {
             mainFile: { $each: results.mainFileName },
             file: { $each: results.filesName },
@@ -108,6 +110,8 @@ exports.modifyAProduct = (req, res, next) => {
 
           reference: parseReq.reference,
         };
+        console.log(newItem);
+
         Stone.findOneAndUpdate({ _id: req.params.id }, newItem)
           .then(() => {
             Stone.find({ _id: req.params.id }).then((data) => {
