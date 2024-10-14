@@ -3,12 +3,13 @@ const User = require("../models/users");
 
 const { awsConfigV3 } = require("../aws-s3-config/aws-configV3");
 const { awsDeleteConfig } = require("../aws-s3-config/aws-delete-config");
+const { log } = require("console");
 
-// RECUPERATION DE TOUTES LES PIERRES//
+// // RECUPERATION DE TOUTES LES PIERRES//
 
 exports.getAllProduct = async (req, res, next) => {
   const page = parseInt(req.query.page) || 1;
-  const { name, sort } = req.query;
+  const { name, sort, categorie } = req.query;
   const limit = 8;
   let filter = {};
 
@@ -16,21 +17,27 @@ exports.getAllProduct = async (req, res, next) => {
     filter.title = { $regex: name, $options: "i" };
   }
 
+  if (categorie) {
+    filter.categories = categorie;
+  }
+  console.log(filter);
+
   let sortOption = {};
   if (sort === "new") {
-    sortOption = { createdAt: -1 }; // Sort by creation date
+    sortOption = { createdAt: -1 };
   } else if (sort === "ascending") {
-    sortOption = { price: 1 }; // Sort by price ascending
+    sortOption = { price: 1 };
   } else if (sort === "decreasing") {
-    sortOption = { price: -1 }; // Sort by price descending
+    sortOption = { price: -1 };
   }
 
   try {
-    const totalStones = await Stone.countDocuments();
+    const totalStones = await Stone.countDocuments(filter);
+
     const skip = (page - 1) * limit;
 
     const stones = await Stone.find(filter)
-      .sort(sortOption) // Apply sorting
+      .sort(sortOption)
       .skip(skip)
       .limit(limit);
 
@@ -44,6 +51,45 @@ exports.getAllProduct = async (req, res, next) => {
     res.status(400).json({ error });
   }
 };
+
+// exports.getAllProduct = async (req, res, next) => {
+//   const page = parseInt(req.query.page) || 1;
+//   const { name, sort } = req.query;
+//   const limit = 8;
+//   let filter = {};
+
+//   if (name) {
+//     filter.title = { $regex: name, $options: "i" };
+//   }
+
+//   let sortOption = {};
+//   if (sort === "new") {
+//     sortOption = { createdAt: -1 }; // Sort by creation date
+//   } else if (sort === "ascending") {
+//     sortOption = { price: 1 }; // Sort by price ascending
+//   } else if (sort === "decreasing") {
+//     sortOption = { price: -1 }; // Sort by price descending
+//   }
+
+//   try {
+//     const totalStones = await Stone.countDocuments();
+//     const skip = (page - 1) * limit;
+
+//     const stones = await Stone.find(filter)
+//       .sort(sortOption) // Apply sorting
+//       .skip(skip)
+//       .limit(limit);
+
+//     res.status(200).json({
+//       total: totalStones,
+//       page,
+//       limit,
+//       stones,
+//     });
+//   } catch (error) {
+//     res.status(400).json({ error });
+//   }
+// };
 
 // RECUPERATION DE PIERRE //
 
