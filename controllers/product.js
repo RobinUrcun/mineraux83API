@@ -10,7 +10,7 @@ const { log } = require("console");
 exports.getAllProduct = async (req, res, next) => {
   const page = parseInt(req.query.page) || 1;
   const { name, sort, categorie } = req.query;
-  const limit = 8;
+  const limit = 12;
   let filter = {};
 
   if (name) {
