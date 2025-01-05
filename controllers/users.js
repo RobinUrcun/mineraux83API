@@ -123,11 +123,10 @@ exports.logIn = (req, res, next) => {
               "Set-Cookie",
               cookie.serialize("userToken", token, {
                 httpOnly: true,
-                secure: true,
-                sameSite: "None",
+                secure: false,
+                sameSite: "Lax",
                 maxAge: 3600 * 24,
                 path: "/",
-                domain: ".",
               })
             );
             return res.status(200).json({
