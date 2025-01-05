@@ -124,10 +124,10 @@ exports.logIn = (req, res, next) => {
               cookie.serialize("userToken", token, {
                 httpOnly: true,
                 secure: false,
-                sameSite: "Lax",
+                sameSite: "None",
                 maxAge: 3600 * 24,
                 path: "/",
-                domain: "lithosphere.vercel.app"
+                domain: "lithosphere.vercel.app",
               })
             );
             return res.status(200).json({
