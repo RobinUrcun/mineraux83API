@@ -22,7 +22,7 @@ app.use(bodyParser.json());
 app.use((req, res, next) => {
   res.setHeader(
     "Access-Control-Allow-Origin",
-    "https://lithosphere-api.vercel.app"
+    "https://lithosphere.vercel.app"
   );
   res.setHeader(
     "Access-Control-Allow-Headers",
