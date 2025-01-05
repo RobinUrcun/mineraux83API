@@ -124,7 +124,7 @@ exports.logIn = (req, res, next) => {
               cookie.serialize("userToken", token, {
                 httpOnly: true,
                 secure: true,
-                sameSite: "Strict",
+                sameSite: "None",
                 maxAge: 3600 * 24,
                 path: "/",
               })
