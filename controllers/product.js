@@ -104,6 +104,8 @@ exports.createAProduct = (req, res, next) => {
   User.findOne({ _id: req.auth.userId })
     .then(async (user) => {
       if (user.role === "ADMIN") {
+        console.log("admin");
+
         const stringifyReq = JSON.stringify(req.body);
         const parseReq = JSON.parse(stringifyReq);
         const results = await awsConfigV3(req.files);

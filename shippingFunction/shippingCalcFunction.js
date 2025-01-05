@@ -12,7 +12,7 @@ exports.shippingCalcFunction = (data, deliveryCompany, deliveryCountry) => {
       } else {
         res.status(400).json({ message: "pays invalide" });
       }
-    } else if (deliveryCompany === "CM") {
+    } else if (deliveryCompany === "CP") {
       if (deliveryCountry) {
         const shippingPrice = shippingFunctionCM(data, deliveryCountry);
         totalcart = parseInt(totalcart) + parseInt(shippingPrice);
@@ -23,5 +23,7 @@ exports.shippingCalcFunction = (data, deliveryCompany, deliveryCountry) => {
       res.status(400).json({ message: "mode de livraison invalide" });
     }
   }
+  console.log(totalcart);
+
   return totalcart;
 };

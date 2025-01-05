@@ -3,9 +3,13 @@ const jwt = require("jsonwebtoken");
 // MIDDLEWARE D'AUTENTIFICATION //
 
 module.exports = (req, res, next) => {
+  console.log("cookie", req.headers.Cookie);
+
   try {
-    const token = req.headers.authorization.split(" ")[1];
-    const decodedToken = jwt.verify(token, "phrase_de_cryptage");
+    const token = req.cookies.userToken || req.headers.cookie;
+    console.log(token);
+
+    const decodedToken = jwt.verify(token, process.env.BCRYPTCRYPTAGE);
 
     const userId = decodedToken.userId;
     req.auth = {

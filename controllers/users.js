@@ -3,6 +3,7 @@ const Stone = require("../models/product");
 const Orders = require("../models/orders");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+const cookie = require("cookie");
 const nodemailer = require("nodemailer");
 const {
   shippingCalcFunction,
@@ -27,7 +28,60 @@ exports.signUp = (req, res, next) => {
       });
       user
         .save()
-        .then(() => res.status(201).json({ message: "utilisateur crée" }))
+        .then(() => {
+          User.findOne({ email: req.body.email })
+            .then((user) => {
+              if (!user) {
+                return res
+                  .status(403)
+                  .json({ message: "email ou mot de passe invalide" });
+              } else {
+                bcrypt
+                  .compare(req.body.password, user.password)
+                  .then(async (password) => {
+                    if (!password) {
+                      return res
+                        .status(403)
+                        .json({ message: "email ou mot de passe invalide" });
+                    }
+                    if (req.body.cart) {
+                      await User.findOneAndUpdate(
+                        { email: user.email },
+                        {
+                          $addToSet: {
+                            cart: { $each: JSON.parse(req.body.cart) },
+                          },
+                        }
+                      );
+                    }
+                    const token = jwt.sign(
+                      {
+                        userId: user._id,
+                        userRole: user.role,
+                      },
+                      process.env.BCRYPTCRYPTAGE,
+                      { expiresIn: "24h" }
+                    );
+                    res.setHeader(
+                      "Set-Cookie",
+                      cookie.serialize("userToken", token, {
+                        httpOnly: true,
+                        secure: false,
+                        sameSite: "Strict",
+                        maxAge: 3600 * 24,
+                        path: "/",
+                      })
+                    );
+                    return res.status(200).json({
+                      userId: user._id,
+                      userRole: user.role,
+                    });
+                  })
+                  .catch((error) => res.status(400).json({ error }));
+              }
+            })
+            .catch((error) => res.status(400).json({ error }));
+        })
         .catch((error) => res.status(400).json({ error }));
     })
     .catch((error) => res.status(500).json({ error }));
@@ -45,50 +99,73 @@ exports.logIn = (req, res, next) => {
       } else {
         bcrypt
           .compare(req.body.password, user.password)
-          .then((password) => {
+          .then(async (password) => {
             if (!password) {
               return res
                 .status(403)
                 .json({ message: "email ou mot de passe invalide" });
-            } else {
-              if (req.body.cart) {
-                User.findOneAndUpdate(
-                  { email: user.email },
-                  { $addToSet: { cart: { $each: JSON.parse(req.body.cart) } } }
-                )
-                  .then(
-                    res.status(200).json({
-                      userId: user._id,
-                      userRole: user.role,
-                      token: jwt.sign(
-                        {
-                          userId: user._id,
-                        },
-                        "phrase_de_cryptage",
-                        { expiresIn: "24h" }
-                      ),
-                    })
-                  )
-                  .catch((err) => res.status(404).json({ err }));
-              } else {
-                res.status(200).json({
-                  userId: user._id,
-                  userRole: user.role,
-                  token: jwt.sign(
-                    {
-                      userId: user._id,
-                    },
-                    "phrase_de_cryptage",
-                    { expiresIn: "24h" }
-                  ),
-                });
-              }
             }
+            if (req.body.cart) {
+              await User.findOneAndUpdate(
+                { email: user.email },
+                { $addToSet: { cart: { $each: JSON.parse(req.body.cart) } } }
+              );
+            }
+            const token = jwt.sign(
+              {
+                userId: user._id,
+                userRole: user.role,
+              },
+              process.env.BCRYPTCRYPTAGE,
+              { expiresIn: "24h" }
+            );
+            res.setHeader(
+              "Set-Cookie",
+              cookie.serialize("userToken", token, {
+                httpOnly: true,
+                secure: false,
+                sameSite: "Strict",
+                maxAge: 3600 * 24,
+                path: "/",
+              })
+            );
+            return res.status(200).json({
+              userId: user._id,
+              userRole: user.role,
+            });
           })
           .catch((error) => res.status(400).json({ error }));
       }
     })
     .catch((error) => res.status(400).json({ error }));
+};
+
+// DECONNECTION D'UN UTILISATEUR //
+
+exports.logOut = (req, res, next) => {
+  User.findOne({ _id: req.auth.userId })
+    .then((user) => {
+      if (!user) {
+        return res
+          .status(403)
+          .json({ message: "email ou mot de passe invalide" });
+      } else {
+        res.setHeader(
+          "Set-Cookie",
+          cookie.serialize("userToken", "", {
+            httpOnly: true,
+            secure: false,
+            sameSite: "Strict",
+            path: "/",
+            expires: new Date(0),
+          })
+        );
+        return res.status(200).json({
+          message: "utilisateur deconnecté",
+        });
+      }
+    })
+    .catch((err) => res.status(404).json({ err }));
 };
 
 // RECUPERATION DES INFO DE L'UTILISATEUR //
@@ -111,11 +188,7 @@ exports.userInfo = (req, res, next) => {
 exports.role = (req, res, next) => {
   User.findOne({ _id: req.auth.userId })
     .then((user) => {
-      if (user.role == "ADMIN") {
-        res.status(200).json({ role: user.role });
-      } else {
-        res.status(401).json({ message: "Vous n'etes pas administrateur" });
-      }
+      res.status(200).json({ role: user.role });
     })
     .catch((error) => res.status(404).json({ error }));
 };
@@ -138,18 +211,9 @@ exports.modifyUser = (req, res, next) => {
                 .json({ message: "mot de passe actuel eroné" });
             } else {
               if (req.body.newPassword === "") {
-                const newUserInfo = {
-                  password: user.password,
-                  name: req.body.name,
-                  surname: req.body.surname,
-                  role: user.role,
-                  cart: user.cart,
-                };
-                User.updateOne({ _id: req.auth.userId }, newUserInfo)
-                  .then(() => {
-                    res.status(200).json({ message: "Informations modifiées" });
-                  })
-                  .catch((err) => res.status(400).json({ err }));
+                res.status(400).json({
+                  message: "Impossible de mettre un mot de passe vide ",
+                });
               } else {
                 bcrypt
                   .hash(req.body.newPassword, 10)
@@ -158,8 +222,6 @@ exports.modifyUser = (req, res, next) => {
                       password: hash,
                       name: req.body.name,
                       surname: req.body.surname,
-                      role: user.role,
-                      cart: user.cart,
                     };
                     User.updateOne({ _id: req.auth.userId }, newUserInfo)
                       .then(() => {
@@ -313,6 +375,7 @@ exports.orders = async (req, res, next) => {
             deliveryInfo.deliveryCompany,
             deliveryInfo.country
           );
+          console.log(totalcart);
 
           try {
             // use the cart information passed from the front-end to calculate the order amount detals
@@ -476,9 +539,13 @@ exports.forgotPassword = (req, res, next) => {
       if (!response) {
         res.status(400).json({ err });
       } else {
-        const token = jwt.sign({ userId: response._id }, "phrase_de_cryptage", {
-          expiresIn: "1h",
-        });
+        const token = jwt.sign(
+          { userId: response._id },
+          process.env.BCRYPTCRYPTAGE,
+          {
+            expiresIn: "1h",
+          }
+        );
         const tokenExpires = Date.now() + 3600000;
 
         // SAUVEGARDE DU TOKEN //
@@ -493,7 +560,7 @@ exports.forgotPassword = (req, res, next) => {
           from: "mineraux83API@gmail.com",
           to: response.email,
           subject: "Réinitialisation de votre mot de passe",
-          text: `Cliquez sur ce lien pour réinitialiser votre mot de passe : www.lithosphere83.fr/reset-password/${token}`,
+          text: `Cliquez sur ce lien pour réinitialiser votre mot de passe : www.lithosphere83.fr/resetPassword/${token}`,
         };
 
         await User.updateOne(
@@ -520,31 +587,43 @@ exports.forgotPassword = (req, res, next) => {
 // REINITIALISATION DU MOT DE PASSE //
 
 exports.resetPassword = (req, res, next) => {
-  bcrypt
-    .hash(req.body.password, 10)
-    .then((hash) => {
-      User.findOneAndUpdate(
-        {
-          _id: req.auth.userId,
-          resetPasswordToken: req.headers.authorization.split(" ")[1],
-          resetPasswordExpires: { $gt: Date.now() },
-        },
-        {
-          password: hash,
-          resetPasswordToken: "undefined",
-          resetPasswordExpires: 0,
-        },
-        { new: true }
-      )
-        .then((user) => {
-          if (!user) {
-            res.status(400).json({ err: "erreur update" });
-          } else {
-            res.status(200).json({ message: "Mot de passe modifié" });
-          }
-        })
-        .catch((err) => res.status(400).json({ err: "erreur update" }));
-    })
+  try {
+    const token = req.headers.authorization.split(" ")[1];
+    const decodedToken = jwt.verify(token, process.env.BCRYPTCRYPTAGE);
 
-    .catch((err) => res.status(400).json({ erreur: "hash du mot de passe" }));
+    const userId = decodedToken.userId;
+    req.auth = {
+      userId: userId,
+    };
+
+    bcrypt
+      .hash(req.body.password, 10)
+      .then((hash) => {
+        User.findOneAndUpdate(
+          {
+            _id: userId,
+            resetPasswordToken: req.headers.authorization.split(" ")[1],
+            resetPasswordExpires: { $gt: Date.now() },
+          },
+          {
+            password: hash,
+            resetPasswordToken: "undefined",
+            resetPasswordExpires: 0,
+          },
+          { new: true }
+        )
+          .then((user) => {
+            if (!user) {
+              res.status(400).json({ err: "erreur update" });
+            } else {
+              res.status(200).json({ message: "Mot de passe modifié" });
+            }
+          })
+          .catch((err) => res.status(400).json({ err: "erreur update" }));
+      })
+
+      .catch((err) => res.status(400).json({ erreur: "hash du mot de passe" }));
+  } catch (error) {
+    res.status(401).json({ message: "token non valide" });
+  }
 };
