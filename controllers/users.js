@@ -127,6 +127,7 @@ exports.logIn = (req, res, next) => {
                 sameSite: "Lax",
                 maxAge: 3600 * 24,
                 path: "/",
+                domain: "lithosphere.vercel.app"
               })
             );
             return res.status(200).json({
