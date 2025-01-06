@@ -127,6 +127,7 @@ exports.logIn = (req, res, next) => {
                 sameSite: "None",
                 maxAge: 3600 * 24,
                 path: "/",
+                domain: ".lithosphere83.fr",
               })
             );
             return res.status(200).json({
