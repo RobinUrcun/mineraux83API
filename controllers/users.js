@@ -66,10 +66,11 @@ exports.signUp = (req, res, next) => {
                       "Set-Cookie",
                       cookie.serialize("userToken", token, {
                         httpOnly: true,
-                        secure: false,
-                        sameSite: "Strict",
+                        secure: true,
+                        sameSite: "None",
                         maxAge: 3600 * 24,
                         path: "/",
+                        domain: ".lithosphere83.fr",
                       })
                     );
                     return res.status(200).json({
@@ -155,9 +156,11 @@ exports.logOut = (req, res, next) => {
           "Set-Cookie",
           cookie.serialize("userToken", "", {
             httpOnly: true,
-            secure: false,
-            sameSite: "Strict",
+            secure: true,
+            sameSite: "None",
             path: "/",
+            domain: ".lithosphere83.fr",
+
             expires: new Date(0),
           })
         );
