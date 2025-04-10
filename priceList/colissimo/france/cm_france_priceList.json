@@ -1,6 +1,6 @@
 {
   "tarif": [
-    { "maxWeight": 250, "price": 0 },
+    { "maxWeight": 250, "price": 499},
 
     { "maxWeight": 500, "price": 699 },
     { "maxWeight": 750, "price": 810 },
