@@ -442,12 +442,12 @@ exports.ordersCapture = async (req, res, next) => {
               deliveryCity: deliveryInfo.city,
               deliveryCountry: deliveryInfo.country,
             });
-            const deleteAwsPromise = [];
-            for (let index = 0; index < stone.length; index++) {
-              deleteAwsPromise.push(
-                awsDeleteConfig(stone[index].mainFile, stone[index].file)
-              );
-            }
+            // const deleteAwsPromise = [];
+            // for (let index = 0; index < stone.length; index++) {
+            //   deleteAwsPromise.push(
+            //     awsDeleteConfig(stone[index].mainFile, stone[index].file)
+            //   );
+            // }
             const transporter = nodemailer.createTransport({
               service: "Gmail",
               auth: {
@@ -465,8 +465,12 @@ exports.ordersCapture = async (req, res, next) => {
             await Promise.all([
               transporter.sendMail(mailOptions),
               newOrder.save().then(() => {}),
-              Promise.all(deleteAwsPromise),
-              Stone.deleteMany({ _id: { $in: user.cart } }),
+              // Promise.all(deleteAwsPromise),
+              // Stone.deleteMany({ _id: { $in: user.cart } }),
+              Stone.updateMany(
+                { _id: { $in: user.cart } },
+                { $set: { sold: true } }
+              ),
               User.findOneAndUpdate(
                 { _id: req.auth.userId },
                 { $set: { cart: [] } }

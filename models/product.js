@@ -11,6 +11,7 @@ const stoneSchema = mongoose.Schema(
     weight: { type: Number, required: false },
     origin: { type: String, required: false },
     reference: { type: String, required: false },
+    sold: { type: Boolean, required: true },
     mainFile: { type: Array, required: false },
     file: { type: Array, required: false },
     categories: { type: Array, required: false },
