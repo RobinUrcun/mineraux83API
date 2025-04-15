@@ -117,6 +117,7 @@ exports.createAProduct = (req, res, next) => {
           size: parseReq.size,
           weight: parseReq.weight,
           origin: parseReq.origin,
+          sold: false,
           mainFile: results.mainFileName,
           file: results.filesName,
           categories: parseReq.categories,
