@@ -296,7 +296,7 @@ async function handleResponse(response) {
 }
 
 const { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PORT = 8888 } = process.env;
-const base = "https://api-m.sandbox.paypal.com";
+const base = "https://api-m.paypal.com";
 
 const createOrder = async (cart) => {
   const accessToken = await generateAccessToken();
